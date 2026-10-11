@@ -1,7 +1,7 @@
 import React from 'react';
-import { GameMode, KillFeedItem, RocketTypeId } from '../types/game';
+import { GameMode, KillFeedItem } from '../types/game';
 import { VirtualJoystick } from './VirtualJoystick';
-import { Shield, Crosshair, Zap, Pause, Award } from 'lucide-react';
+import { Zap, Pause, Crosshair } from 'lucide-react';
 
 interface TwoPlayerHUDProps {
   mode: GameMode;
@@ -28,7 +28,6 @@ interface TwoPlayerHUDProps {
 
 export const TwoPlayerHUD: React.FC<TwoPlayerHUDProps> = ({
   mode,
-  p1Score,
   p1Kills,
   p1Hp,
   p1MaxHp,
@@ -46,7 +45,6 @@ export const TwoPlayerHUD: React.FC<TwoPlayerHUDProps> = ({
   onP1Dash,
   onP2Dash,
   onPause,
-  killFeed,
 }) => {
   const p1HpPct = Math.max(0, (p1Hp / p1MaxHp) * 100);
   const p1ShieldPct = Math.max(0, (p1Shield / p1MaxShield) * 100);
@@ -54,98 +52,98 @@ export const TwoPlayerHUD: React.FC<TwoPlayerHUDProps> = ({
   const p2ShieldPct = Math.max(0, (p2Shield / p2MaxShield) * 100);
 
   return (
-    <div className="absolute inset-0 pointer-events-none select-none z-10 flex flex-col justify-between p-2">
+    <div className="absolute inset-0 pointer-events-none select-none z-10 flex flex-col justify-between p-1.5 sm:p-2 overflow-hidden max-w-full max-h-[100dvh]">
       {/* Top Header: Player 1 VS Player 2 Status */}
-      <div className="flex items-center justify-between w-full pointer-events-auto">
-        {/* P1 Bar (Blue) */}
-        <div className="flex flex-col gap-1 bg-slate-900/80 backdrop-blur border border-cyan-500/40 p-2 rounded-xl min-w-[140px]">
-          <div className="flex items-center justify-between text-[11px] font-black text-cyan-400">
-            <span>P1 (CYAN)</span>
+      <div className="flex items-center justify-between w-full pointer-events-auto gap-1">
+        {/* P1 Bar (Cyan) */}
+        <div className="flex flex-col gap-0.5 bg-slate-900/90 backdrop-blur border border-cyan-500/50 p-1 sm:p-1.5 rounded-xl w-20 sm:w-28 shrink-0">
+          <div className="flex items-center justify-between text-[8px] sm:text-[9px] font-black text-cyan-400">
+            <span>P1</span>
             <span className="font-mono">{Math.round(p1Hp)} HP</span>
           </div>
-          <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-slate-950 h-1 rounded-full overflow-hidden">
             <div style={{ width: `${p1HpPct}%` }} className="h-full bg-cyan-400" />
           </div>
-          <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-slate-950 h-1 rounded-full overflow-hidden">
             <div style={{ width: `${p1ShieldPct}%` }} className="h-full bg-blue-500" />
           </div>
         </div>
 
-        {/* Center Match Banner */}
-        <div className="flex flex-col items-center bg-slate-900/80 border border-slate-700 px-3 py-1.5 rounded-xl">
-          <span className="text-[10px] font-extrabold text-amber-400 uppercase tracking-widest">
-            {mode === 'coop_survival' ? `CO-OP WAVE ${wave || 1}` : 'DUEL 1 VS 1'}
+        {/* Center Match Banner + Pause */}
+        <div className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700 px-2 py-0.5 sm:py-1 rounded-xl shrink-0">
+          <span className="text-[9px] font-extrabold text-amber-400 uppercase tracking-tight">
+            {mode === 'coop_survival' ? `WAVE ${wave || 1}` : `SKOR: ${p1Kills}`}
           </span>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs font-mono font-bold text-cyan-400">P1: {p1Kills}</span>
-            <span className="text-xs text-slate-500 font-bold">-</span>
-            <span className="text-xs font-mono font-bold text-emerald-400">P2</span>
-          </div>
+          <button
+            type="button"
+            onClick={onPause}
+            className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
+          >
+            <Pause className="w-3 h-3" />
+          </button>
         </div>
 
         {/* P2 Bar (Emerald) */}
-        <div className="flex flex-col gap-1 bg-slate-900/80 backdrop-blur border border-emerald-500/40 p-2 rounded-xl min-w-[140px]">
-          <div className="flex items-center justify-between text-[11px] font-black text-emerald-400">
-            <span>P2 (GREEN)</span>
+        <div className="flex flex-col gap-0.5 bg-slate-900/90 backdrop-blur border border-emerald-500/50 p-1 sm:p-1.5 rounded-xl w-20 sm:w-28 shrink-0">
+          <div className="flex items-center justify-between text-[8px] sm:text-[9px] font-black text-emerald-400">
+            <span>P2</span>
             <span className="font-mono">{Math.round(p2Hp)} HP</span>
           </div>
-          <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-slate-950 h-1 rounded-full overflow-hidden">
             <div style={{ width: `${p2HpPct}%` }} className="h-full bg-emerald-400" />
           </div>
-          <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-slate-950 h-1 rounded-full overflow-hidden">
             <div style={{ width: `${p2ShieldPct}%` }} className="h-full bg-teal-500" />
           </div>
         </div>
       </div>
 
-      {/* Center pause icon */}
-      <div className="self-center pointer-events-auto">
-        <button
-          onClick={onPause}
-          className="w-8 h-8 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-white"
-        >
-          <Pause className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      {/* Dual Player Controls at Bottom */}
-      <div className="flex items-end justify-between w-full pointer-events-auto pb-2 px-1">
+      {/* Dual Player Controls at Bottom - Responsive & Contained */}
+      <div className="flex items-end justify-between w-full pointer-events-auto pb-1 px-0.5 sm:px-1 gap-1">
         {/* PLAYER 1 CONTROLS (Left Side) */}
-        <div className="flex items-end gap-3 bg-slate-950/40 p-2 rounded-3xl border border-cyan-500/20 backdrop-blur-sm">
-          <VirtualJoystick size={110} label="P1 MOVE" color="#06b6d4" onChange={onP1Move} />
-          <div className="flex flex-col gap-2">
+        <div className="flex items-end gap-1 bg-slate-950/60 p-1 sm:p-1.5 rounded-2xl border border-cyan-500/30 backdrop-blur-sm">
+          <VirtualJoystick size={84} label="P1" color="#06b6d4" onChange={onP1Move} />
+          <div className="flex flex-col gap-1">
             <button
+              type="button"
               onClick={onP1Dash}
-              className="w-11 h-11 rounded-xl bg-cyan-700/80 border border-cyan-400 flex items-center justify-center text-white active:scale-90"
+              className="w-8 h-8 rounded-lg bg-cyan-700/80 border border-cyan-400 flex items-center justify-center text-white active:scale-90"
+              title="Dash P1"
             >
-              <Zap className="w-4 h-4" />
+              <Zap className="w-3.5 h-3.5" />
             </button>
             <button
+              type="button"
               onClick={onP1Fire}
-              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 border-2 border-cyan-300 flex items-center justify-center text-white shadow-lg shadow-cyan-500/30 active:scale-90 font-black text-xs"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 border border-cyan-300 flex flex-col items-center justify-center text-white shadow font-black text-[9px] active:scale-90"
             >
-              P1 FIRE
+              <Crosshair className="w-3.5 h-3.5" />
+              <span>TEMBAK</span>
             </button>
           </div>
         </div>
 
         {/* PLAYER 2 CONTROLS (Right Side) */}
-        <div className="flex items-end gap-3 bg-slate-950/40 p-2 rounded-3xl border border-emerald-500/20 backdrop-blur-sm">
-          <div className="flex flex-col gap-2">
+        <div className="flex items-end gap-1 bg-slate-950/60 p-1 sm:p-1.5 rounded-2xl border border-emerald-500/30 backdrop-blur-sm">
+          <div className="flex flex-col gap-1">
             <button
+              type="button"
               onClick={onP2Dash}
-              className="w-11 h-11 rounded-xl bg-emerald-700/80 border border-emerald-400 flex items-center justify-center text-white active:scale-90"
+              className="w-8 h-8 rounded-lg bg-emerald-700/80 border border-emerald-400 flex items-center justify-center text-white active:scale-90"
+              title="Dash P2"
             >
-              <Zap className="w-4 h-4" />
+              <Zap className="w-3.5 h-3.5" />
             </button>
             <button
+              type="button"
               onClick={onP2Fire}
-              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 border-2 border-emerald-300 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 active:scale-90 font-black text-xs"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 border border-emerald-300 flex flex-col items-center justify-center text-white shadow font-black text-[9px] active:scale-90"
             >
-              P2 FIRE
+              <Crosshair className="w-3.5 h-3.5" />
+              <span>TEMBAK</span>
             </button>
           </div>
-          <VirtualJoystick size={110} label="P2 MOVE" color="#10b981" onChange={onP2Move} />
+          <VirtualJoystick size={84} label="P2" color="#10b981" onChange={onP2Move} />
         </div>
       </div>
     </div>

@@ -67,7 +67,11 @@ export interface PlayerProfile {
   hapticsEnabled: boolean;
   cameraMode?: 'tactical' | 'follow';
   autoAimEnabled?: boolean;
+  autoFireEnabled?: boolean;
+  controlScheme?: 'joystick' | 'dpad';
   controlsSensitivity?: 'normal' | 'high';
+  invertY?: boolean;
+  invertX?: boolean;
   totalKills: number;
   matchesPlayed: number;
 }

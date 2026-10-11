@@ -41,8 +41,8 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   const timeFormatted = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-      <div className="relative w-full max-w-md flex flex-col bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl p-6 text-white text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md">
+      <div className="relative w-full max-w-md max-h-[90dvh] overflow-y-auto flex flex-col bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl p-3 sm:p-5 text-white text-center">
         {/* Victory / Defeat Header */}
         <div className="flex flex-col items-center mb-4">
           <div

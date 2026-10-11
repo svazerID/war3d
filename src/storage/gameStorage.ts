@@ -142,7 +142,11 @@ export function loadPlayerProfile(): PlayerProfile {
       }
       if (!data.cameraMode) data.cameraMode = 'tactical';
       if (data.autoAimEnabled === undefined) data.autoAimEnabled = true;
+      if (data.autoFireEnabled === undefined) data.autoFireEnabled = false;
+      if (!data.controlScheme) data.controlScheme = 'joystick';
       if (!data.controlsSensitivity) data.controlsSensitivity = 'high';
+      if (data.invertY === undefined) data.invertY = false;
+      if (data.invertX === undefined) data.invertX = false;
       return data;
     }
   } catch (e) {
@@ -176,7 +180,11 @@ export function loadPlayerProfile(): PlayerProfile {
     hapticsEnabled: true,
     cameraMode: 'tactical',
     autoAimEnabled: true,
+    autoFireEnabled: false,
+    controlScheme: 'joystick',
     controlsSensitivity: 'high',
+    invertY: false,
+    invertX: false,
     totalKills: 0,
     matchesPlayed: 0,
   };

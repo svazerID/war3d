@@ -496,6 +496,14 @@ export class GameEngine {
         this.player1.lockedTarget.position.z
       );
       this.lockOnReticle.rotation.y += dt * 3.5;
+
+      // Auto-Fire option: automatically shoot when enemy is in range
+      if (this.profile.autoFireEnabled && !this.player1.isDead) {
+        const dist = this.player1.position.distanceTo(this.player1.lockedTarget.position);
+        if (dist < 34 && this.player1.fireCooldowns[this.player1.equippedWeapon] <= 0) {
+          this.fireP1();
+        }
+      }
     } else {
       this.lockOnReticle.visible = false;
     }

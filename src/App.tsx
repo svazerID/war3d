@@ -237,8 +237,13 @@ export default function App() {
       if (keys['a'] || keys['arrowleft']) mx -= 1;
       if (keys['d'] || keys['arrowright']) mx += 1;
 
-      // Only override if keyboard was touched
-      if (mx !== 0 || my !== 0 || keys['w'] !== undefined) {
+      const hasKeyMovement = Boolean(
+        keys['w'] || keys['s'] || keys['a'] || keys['d'] ||
+        keys['arrowup'] || keys['arrowdown'] || keys['arrowleft'] || keys['arrowright']
+      );
+
+      // Only override if keyboard was actively pressed for movement
+      if (hasKeyMovement) {
         eng.p1Input.moveX = mx;
         eng.p1Input.moveY = my;
       }
@@ -383,6 +388,58 @@ export default function App() {
       if (engineRef.current) {
         engineRef.current.profile.controlsSensitivity = nextSens;
         engineRef.current.player1.profile.controlsSensitivity = nextSens;
+      }
+      return updated;
+    });
+  };
+
+  const toggleAutoFire = () => {
+    setProfile((prev) => {
+      const next = !prev.autoFireEnabled;
+      const updated: PlayerProfile = { ...prev, autoFireEnabled: next };
+      savePlayerProfile(updated);
+      if (engineRef.current) {
+        engineRef.current.profile.autoFireEnabled = next;
+        engineRef.current.player1.profile.autoFireEnabled = next;
+      }
+      return updated;
+    });
+  };
+
+  const toggleControlScheme = () => {
+    setProfile((prev) => {
+      const next: 'joystick' | 'dpad' = prev.controlScheme === 'dpad' ? 'joystick' : 'dpad';
+      const updated: PlayerProfile = { ...prev, controlScheme: next };
+      savePlayerProfile(updated);
+      if (engineRef.current) {
+        engineRef.current.profile.controlScheme = next;
+        engineRef.current.player1.profile.controlScheme = next;
+      }
+      return updated;
+    });
+  };
+
+  const toggleInvertY = () => {
+    setProfile((prev) => {
+      const next = !prev.invertY;
+      const updated: PlayerProfile = { ...prev, invertY: next };
+      savePlayerProfile(updated);
+      if (engineRef.current) {
+        engineRef.current.profile.invertY = next;
+        engineRef.current.player1.profile.invertY = next;
+      }
+      return updated;
+    });
+  };
+
+  const toggleInvertX = () => {
+    setProfile((prev) => {
+      const next = !prev.invertX;
+      const updated: PlayerProfile = { ...prev, invertX: next };
+      savePlayerProfile(updated);
+      if (engineRef.current) {
+        engineRef.current.profile.invertX = next;
+        engineRef.current.player1.profile.invertX = next;
       }
       return updated;
     });
@@ -582,6 +639,12 @@ export default function App() {
           onPause={togglePause}
           cameraMode={profile.cameraMode || 'tactical'}
           onToggleCamera={toggleCamera}
+          autoFireEnabled={profile.autoFireEnabled}
+          onToggleAutoFire={toggleAutoFire}
+          controlScheme={profile.controlScheme || 'joystick'}
+          onToggleControlScheme={toggleControlScheme}
+          invertY={profile.invertY}
+          onToggleInvertY={toggleInvertY}
           lockedTarget={lockedTarget}
           killFeed={killFeed}
           fireCooldown={fireCooldown}
@@ -650,7 +713,11 @@ export default function App() {
           onToggleHaptics={toggleHaptics}
           onToggleCamera={toggleCamera}
           onToggleAutoAim={toggleAutoAim}
+          onToggleAutoFire={toggleAutoFire}
+          onToggleControlScheme={toggleControlScheme}
           onToggleSensitivity={toggleSensitivity}
+          onToggleInvertY={toggleInvertY}
+          onToggleInvertX={toggleInvertX}
         />
       )}
 

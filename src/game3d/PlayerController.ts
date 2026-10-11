@@ -184,17 +184,13 @@ export class PlayerVehicle implements DamageableEntity {
 
     let shootDir: THREE.Vector3;
 
-    // 1. Manual aim if dragged
-    if (manualAimDir && (Math.abs(manualAimDir.x) > 0.15 || Math.abs(manualAimDir.y) > 0.15)) {
-      shootDir = new THREE.Vector3(manualAimDir.x, 0, -manualAimDir.y).normalize();
-    }
-    // 2. Auto-Aim at locked target
-    else if (this.lockedTarget && !this.lockedTarget.isDead) {
+    // 1. Auto-Aim at locked target
+    if (this.lockedTarget && !this.lockedTarget.isDead && (!manualAimDir || (Math.abs(manualAimDir.x) <= 0.15 && Math.abs(manualAimDir.y) <= 0.15))) {
       const toTarget = this.lockedTarget.position.clone().sub(this.position);
       toTarget.y = 0;
       shootDir = toTarget.normalize();
     }
-    // 3. Fallback: Vehicle forward direction
+    // 2. Manual aim or vehicle heading (follows turret launcher barrel)
     else {
       const turretAngle = this.meshBundle.turret.rotation.y;
       const globalAngle = this.rotationY + turretAngle;
@@ -263,51 +259,65 @@ export class PlayerVehicle implements DamageableEntity {
 
     // --- REFINED TIGHT VEHICLE MOVEMENT ---
     const sensitivity = this.profile.controlsSensitivity === 'normal' ? 1.0 : 1.25;
-    const maxSpeed = 18.0 * sensitivity;
-    const accel = 95.0 * sensitivity;
-    const turnRate = (this.profile.controlsSensitivity === 'normal' ? 14.0 : 20.0);
+    const maxSpeed = 19.5 * sensitivity;
+    const accel = 115.0 * sensitivity;
+    const turnRate = (this.profile.controlsSensitivity === 'normal' ? 22.0 : 28.0);
 
-    const inputMagSq = input.moveX * input.moveX + input.moveY * input.moveY;
+    // Apply Invert axes options
+    const rawX = input.moveX;
+    const rawY = input.moveY;
+    const vx = this.profile.invertX ? -rawX : rawX;
+    const vy = this.profile.invertY ? rawY : -rawY; // -rawY maps screen UP (negative) to +Z (world forward)
+
+    // --- CAMERA-RELATIVE VECTORS (100% physically aligned with camera view) ---
+    const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    camRight.y = 0;
+    if (camRight.lengthSq() > 0.0001) {
+      camRight.normalize();
+    } else {
+      camRight.set(-1, 0, 0); // Default fallback when facing +Z
+    }
+
+    const camForward = new THREE.Vector3();
+    camera.getWorldDirection(camForward);
+    camForward.y = 0;
+    if (camForward.lengthSq() > 0.0001) {
+      camForward.normalize();
+    } else {
+      camForward.set(0, 0, 1); // Default fallback
+    }
+
+    const inputMagSq = vx * vx + vy * vy;
 
     if (inputMagSq > 0.008) {
-      let desiredWorldDir = new THREE.Vector3();
+      const desiredWorldDir = new THREE.Vector3();
+      desiredWorldDir.addScaledVector(camRight, vx);
+      desiredWorldDir.addScaledVector(camForward, vy);
 
-      if (cameraMode === 'tactical') {
-        // Tactical view: Top is North (-Z), Bottom is South (+Z), Left is West (-X), Right is East (+X)
-        desiredWorldDir.set(input.moveX, 0, input.moveY).normalize();
-      } else {
-        // Follow Cam view: Relative to camera horizontal heading
-        const camForward = new THREE.Vector3();
-        camera.getWorldDirection(camForward);
-        camForward.y = 0;
-        camForward.normalize();
-
-        const camRight = new THREE.Vector3(-camForward.z, 0, camForward.x);
-        desiredWorldDir.addScaledVector(camRight, input.moveX);
-        desiredWorldDir.addScaledVector(camForward, -input.moveY);
+      if (desiredWorldDir.lengthSq() > 0.0001) {
         desiredWorldDir.normalize();
+
+        // Smooth, snappy rotation towards desired movement angle
+        const targetAngle = Math.atan2(desiredWorldDir.x, desiredWorldDir.z);
+        let angleDiff = targetAngle - this.rotationY;
+        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+        this.rotationY += angleDiff * Math.min(1, dt * turnRate);
+
+        // Banking roll effect
+        const targetRoll = -angleDiff * 0.45;
+        this.bankingAngle += (targetRoll - this.bankingAngle) * Math.min(1, dt * 14);
+
+        const moveMagnitude = Math.min(1, Math.sqrt(inputMagSq));
+        this.velocity.x += desiredWorldDir.x * accel * moveMagnitude * dt;
+        this.velocity.z += desiredWorldDir.z * accel * moveMagnitude * dt;
       }
-
-      // Smooth, snappy rotation towards desired movement angle
-      const targetAngle = Math.atan2(desiredWorldDir.x, desiredWorldDir.z);
-      let angleDiff = targetAngle - this.rotationY;
-      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-
-      this.rotationY += angleDiff * Math.min(1, dt * turnRate);
-
-      // Banking roll effect
-      const targetRoll = -angleDiff * 0.45;
-      this.bankingAngle += (targetRoll - this.bankingAngle) * Math.min(1, dt * 12);
-
-      const moveMagnitude = Math.min(1, Math.sqrt(inputMagSq));
-      this.velocity.x += desiredWorldDir.x * accel * moveMagnitude * dt;
-      this.velocity.z += desiredWorldDir.z * accel * moveMagnitude * dt;
     } else {
-      this.bankingAngle *= Math.max(0, 1 - dt * 10);
+      this.bankingAngle *= Math.max(0, 1 - dt * 12);
       // Snappy brake drag when stick released
-      this.velocity.x *= Math.max(0, 1 - dt * 8.5);
-      this.velocity.z *= Math.max(0, 1 - dt * 8.5);
+      this.velocity.x *= Math.max(0, 1 - dt * 10);
+      this.velocity.z *= Math.max(0, 1 - dt * 10);
     }
 
     // Clamp max speed & general air drag
@@ -315,8 +325,8 @@ export class PlayerVehicle implements DamageableEntity {
     if (currentSpeed > maxSpeed) {
       this.velocity.multiplyScalar(maxSpeed / currentSpeed);
     }
-    this.velocity.x *= Math.max(0, 1 - dt * 3.2);
-    this.velocity.z *= Math.max(0, 1 - dt * 3.2);
+    this.velocity.x *= Math.max(0, 1 - dt * 2.8);
+    this.velocity.z *= Math.max(0, 1 - dt * 2.8);
 
     // Apply movement
     this.position.x += this.velocity.x * dt;
@@ -324,12 +334,19 @@ export class PlayerVehicle implements DamageableEntity {
 
     // --- TURRET AIMING LOGIC ---
     if (input.aimX !== undefined && input.aimY !== undefined && (Math.abs(input.aimX) > 0.15 || Math.abs(input.aimY) > 0.15)) {
-      // Manual aim override
-      const aimGlobalAngle = Math.atan2(input.aimX, -input.aimY);
-      let localTurretAngle = aimGlobalAngle - this.rotationY;
-      while (localTurretAngle > Math.PI) localTurretAngle -= Math.PI * 2;
-      while (localTurretAngle < -Math.PI) localTurretAngle += Math.PI * 2;
-      this.meshBundle.turret.rotation.y = localTurretAngle;
+      // Manual aim override aligned with screen
+      const aimWorldDir = new THREE.Vector3();
+      aimWorldDir.addScaledVector(camRight, input.aimX);
+      aimWorldDir.addScaledVector(camForward, -input.aimY);
+
+      if (aimWorldDir.lengthSq() > 0.0001) {
+        aimWorldDir.normalize();
+        const aimGlobalAngle = Math.atan2(aimWorldDir.x, aimWorldDir.z);
+        let localTurretAngle = aimGlobalAngle - this.rotationY;
+        while (localTurretAngle > Math.PI) localTurretAngle -= Math.PI * 2;
+        while (localTurretAngle < -Math.PI) localTurretAngle += Math.PI * 2;
+        this.meshBundle.turret.rotation.y = localTurretAngle;
+      }
     } else if (this.lockedTarget && !this.lockedTarget.isDead) {
       // Auto-Aim: Track locked enemy
       const worldAim = this.lockedTarget.position.clone().sub(this.position);
@@ -346,7 +363,7 @@ export class PlayerVehicle implements DamageableEntity {
       this.meshBundle.turret.rotation.y *= Math.max(0, 1 - dt * 6);
     }
 
-    // Obstacle collision resolution
+    // Obstacle collision resolution with smooth sliding
     for (const obs of obstacles) {
       if (
         this.position.x + this.radius > obs.min.x &&
@@ -360,10 +377,19 @@ export class PlayerVehicle implements DamageableEntity {
         const distBack = Math.abs(this.position.z - obs.max.z);
 
         const minDist = Math.min(distLeft, distRight, distFront, distBack);
-        if (minDist === distLeft) this.position.x = obs.min.x - this.radius;
-        else if (minDist === distRight) this.position.x = obs.max.x + this.radius;
-        else if (minDist === distFront) this.position.z = obs.min.z - this.radius;
-        else this.position.z = obs.max.z + this.radius;
+        if (minDist === distLeft) {
+          this.position.x = obs.min.x - this.radius;
+          this.velocity.x = Math.min(0, this.velocity.x);
+        } else if (minDist === distRight) {
+          this.position.x = obs.max.x + this.radius;
+          this.velocity.x = Math.max(0, this.velocity.x);
+        } else if (minDist === distFront) {
+          this.position.z = obs.min.z - this.radius;
+          this.velocity.z = Math.min(0, this.velocity.z);
+        } else {
+          this.position.z = obs.max.z + this.radius;
+          this.velocity.z = Math.max(0, this.velocity.z);
+        }
       }
     }
 
