@@ -1,0 +1,6 @@
+{
+  "name": "Rocket War 3D Mobile",
+  "description": "Fast-paced 3D mobile rocket combat game with intuitive touch controls, multiple rocket types, smart AI bots, local 2-player co-op, weapon upgrades, and daily missions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
